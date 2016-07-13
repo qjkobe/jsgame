@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>flappy-bird</title>
+
+	<script src="js/phaser.min.js"></script>
+
+	<script>
+		//state可以是一个自定义对象
+		var state1={
+			preload:function(){},
+			create:function(){},
+			update:function(){}
+		}
+
+		//state也可以是一个构造函数
+		var state2=function(){
+			this.preload=function(){};
+			this.create=function(){};
+			this.update=function(){};
+		}
+
+		//只要存在preload、create、update三个方法中的一个就可以了
+		var state3=function(){
+			this.update=function(){};
+		}
+
+		//当然state里也可以存在其他属性或方法
+		var state4=function(){
+			this.create=function(){};
+			this.aaa=function(){};//其他方法
+			this.bbb='hello';//其他属性
+		}
+	</script>
+</head>
+<body>
+<script>
+	var game=new Phaser.Game(288,205,Phaser.AUTO,'game');
+
+	game.States={};//创建一个对象来存放要用到的state
+	game.States.boot=function(){//boot场景，用来做一些游戏启动前的准备
+		this.preload=function(){
+			game.load.image('loading','assets/preloader.gif');//加载进度条图片资源
+		}
+		this.create=function(){
+			game.state.start('preload');//加载完成后，调用preload场景
+		}
+	}
+	game.States.preload=function(){//preload场景，用来显示资源加载进度
+		this.preload=function(){
+			var preloadSprite=game.add.sprite(50,game.height/2,'loading');//创建显示loading进度的sprite
+			game.load.setPreloadSprite(preloadSprite);//用setPreloadSprite方法来动态实现进度条的效果
+
+			//以下为要加载的资源
+			game.load.image('background','assets/background.png');//游戏背景图
+			game.load.image('ground','assets/ground.png');//地面
+			game.load.image('title','assets/title.png');//游戏标题
+			game.load.spritesheet('bird','assets/bird.png',34,24);//鸟
+			game.load.image('btn','assets/start-button.png');//按钮
+			game.load.spritesheet('pipe','assets/pipes.png',54,320);//管道
+			game.load.bitmapFont('flappy_font','assets/fonts/flappyfont/flappyfont.png','assets/fonts/flappyfont/flappyfont.fnt');//显示分数的字体
+			game.load.audio('fly_sound','assets/flap.wav');//飞翔的音效
+			game.load.audio('score_sound','assets/score.wav');//得分的音效
+			game.load.audio('hit_pipe_sound','assets/pipe-hit.wav');//撞击管道的音效
+			game.load.audio('hit_ground_sound','assets/ouch.wav');//撞击地面的音效
+
+			game.load.image('ready_text','assets/get-ready.png');//get ready图片
+			game.load.image('play_tip','assets/instructions.png');//玩法提示图片
+			game.load.image('game_over','assets/gameover.png');//gameover图片
+			game.load.image('score_board','assets/scoreboard.png');//得分板
+		}
+
+		this.create=function(){
+			game.state.start('menu');//当以上所有资源都加载完成后就可以进入menu游戏菜单场景了
+		}
+	}
+	game.States.menu=function(){//menu场景，游戏菜单
+
+	}
+	game.States.play=function(){//play场景，正式的游戏部分
+
+	}
+
+	//把定义好的场景添加到游戏中
+	game.state.add('boot',game.States.boot);
+	game.state.add('preload',game.States.preload);
+	game.state.add('menu',game.States.menu);
+	game.state.add('play',game.States.play);
+
+	//调用boot场景来启动游戏
+	game.state.start('boot');
+
+</script>
+
+<div id="game"></div>
+	
+</body>
+</html>
