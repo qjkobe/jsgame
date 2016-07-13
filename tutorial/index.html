@@ -1,0 +1,217 @@
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>Phaser - Making your first game, part 4</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+
+<script type="text/javascript">
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+function preload() {
+
+    game.load.image('sky', 'assets/sky.png');
+    game.load.image('ground', 'assets/platform.png');
+    game.load.image('star', 'assets/star.png');
+    game.load.image('aid','assets/firstaid.png');
+    game.load.image('diamond','assets/diamond.png')
+    game.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+    game.load.spritesheet('baddie', 'assets/baddie.png',32,32);
+
+}
+
+var platforms;
+var player;
+var cursors;
+var stars;
+var diamonds;
+var baddie;
+
+var score=0;
+var scoreText;
+
+var heart=100;
+var heartText;
+
+function create() {
+
+    //  We're going to be using physics, so enable the Arcade Physics system
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+
+    //  A simple background for our game
+    game.add.sprite(0, 0, 'sky');
+
+    platforms=game.add.group();
+
+    platforms.enableBody=true;
+
+    var ground=platforms.create(0,game.world.height-64,'ground');
+
+    ground.scale.setTo(2,2);
+
+    ground.body.immovable=true;
+
+    //ledge
+    var ledge=platforms.create(400,400,'ground');
+
+    ledge.body.immovable=true;
+
+    ledge=platforms.create(-150,250,'ground');
+
+    ledge.body.immovable=true;
+
+    ledge=platforms.create(600,150,'ground');
+
+    ledge.body.immovable=true;
+
+    //player
+    player=game.add.sprite(32,game.world.height-393,'dude');
+
+    game.physics.arcade.enable(player);
+
+    player.body.bounce.y=0.2;
+    player.body.gravity.y=400;
+    player.body.collideWorldBounds=true;
+
+    player.animations.add('left',[0,1,2,3],10,true);
+    player.animations.add('right',[5,6,7,8],10,true);
+
+    //baddie
+    baddieadd();
+
+    //cursors
+    cursors=game.input.keyboard.createCursorKeys();
+
+    //stars
+    stars=game.add.group();
+
+    stars.enableBody=true;
+
+    for(var i=0;i<12;i++){
+        var star=stars.create(i*70,0,'star');
+
+        star.body.gravity.y=300;
+
+        star.body.bounce.y=0.7+Math.random()*0.2;
+    }
+
+    //diamonds
+    diamonds=game.add.group();
+
+    diamonds.enableBody=true;
+
+    for(var i=0;i<6;i++){
+        var diamond=diamonds.create(i*160,0,'diamond');
+
+        diamond.body.gravity.y=200;
+        diamond.body.bounce.y=0.7+Math.random()*0.2;
+    }
+
+    scoreText=game.add.text(16,16,'score: 0',{fontSize:'32px',fill:'red'});
+
+    heartText=game.add.text(650,16,'heart: 100',{fontSize:'32px',fill:'red'});
+}
+
+function update() {
+    game.physics.arcade.collide(player,platforms);
+    game.physics.arcade.collide(stars,platforms);
+    game.physics.arcade.collide(diamonds,platforms);
+    game.physics.arcade.collide(baddie,platforms);
+    game.physics.arcade.overlap(player,stars,collectStar,null,this);
+    game.physics.arcade.overlap(player,diamonds,collectDiamond,null,this);
+    game.physics.arcade.overlap(player,baddie,hitBaddie,null,this);
+
+    player.body.velocity.x=0;
+
+    if(cursors.left.isDown){
+        player.body.velocity.x=-150;
+
+        player.animations.play('left');
+    }else if(cursors.right.isDown){
+        player.body.velocity.x=150;
+
+        player.animations.play('right');
+    }else{
+        player.animations.stop();
+
+        player.frame=4;
+    }
+
+    if(cursors.up.isDown&&player.body.touching.down){
+        player.body.velocity.y=-350;
+    }
+
+    if(baddie.body.x>=768){
+        baddie.body.velocity.x=-200;
+    }
+
+    if(baddie.body.x<=0){
+        baddie.body.velocity.x=200;
+    }
+
+    if(baddie.body.velocity.x>0){
+        baddie.animations.play('rightb');
+    }else{
+        baddie.animations.play('leftb');
+    }
+
+    if(baddie.body.velocity.x==0){
+        baddie.body.velocity.x=-200;
+    }
+
+    if(heart<=0){
+        alert("You died!");
+        score=0;
+        scoreText.text='score: '+score;
+        heart=100;
+        heartText.text='heart: '+heart;
+    }
+}
+
+function baddieadd(){
+    baddie=game.add.sprite(Math.random()*800,0,'baddie');
+
+    game.physics.arcade.enable(baddie);
+
+    baddie.body.velocity.x=200;
+    baddie.body.gravity.y=100;
+
+    baddie.body.collideWorldBounds=true;
+
+    baddie.animations.add('leftb',[1,0],10,true);
+    baddie.animations.add('rightb',[2,3],10,true);
+
+}
+
+function collectStar(player,star){
+    star.kill();
+
+    score+=10;
+    scoreText.text='score: '+score;
+}
+
+function collectDiamond(player,diamond){
+    diamond.kill();
+    score+=100;
+    scoreText.text='score: '+score;
+}
+
+function hitBaddie(player,baddie){
+    baddie.kill();
+    baddieadd();
+    heart-=30;
+    heartText.text='heart: '+heart;
+}
+
+</script>
+
+</body>
+</html>
