@@ -20,6 +20,9 @@ javascript phaser
 flappy bird制作完成  
 
 ##2016.7.16  
-tanks制作到一半
+tanks制作到一半  
+
+##2016.7.17  
+优化tanks游戏
 
 

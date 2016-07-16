@@ -44,6 +44,7 @@
 			this.load.image('background','assets/background.png');
 			this.load.image('flame','assets/flame.png');
 			this.load.image('target','assets/target.png');
+			this.load.image('land','assets/land.png');
 		},
 
 		create:function(){
@@ -51,13 +52,26 @@
 
 			this.targets=this.add.group(this.game.world,'targets',false,true,Phaser.Physics.ARCADE);
 
-			this.targets.create(300,390,'target');
-			this.targets.create(500,390,'target');
-			this.targets.create(700,390,'target');
-			this.targets.create(900,390,'target');
+			this.targets.create(284,378,'target');
+			this.targets.create(456,153,'target');
+			this.targets.create(545,305,'target');
+			this.targets.create(726,391,'target');
+			this.targets.create(972,74,'target');
 
 			//防止重力使其下坠
 			this.targets.setAll('body.allowGravity',false);
+
+			this.land=this.add.bitmapData(992,480);
+			this.land.draw('land');
+			this.land.update();
+			this.land.addToWorld();
+
+			//大爆炸
+			this.emitter=this.add.emitter(0,0,30);
+			this.emitter.makeParticles('flame');
+			this.emitter.setXSpeed(-120,120);
+			this.emitter.setYSpeed(-100,-200);
+			this.emitter.setRotation();
 
 			this.bullet=this.add.sprite(0,0,'bullet');
 			this.bullet.exists=false;
@@ -81,6 +95,29 @@
 
 			this.fireButton=this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 			this.fireButton.onDown.add(this.fire,this);
+		},
+
+		/*
+		子弹打到地板
+		*/
+		bulletVsLand:function(){
+			if(this.bullet.x<0||this.bullet.x>this.game.world.width||this.bullet.y>this.game.height){
+				this.removeBullet();
+				return;
+			}
+
+			var x=Math.floor(this.bullet.x);
+			var y=Math.floor(this.bullet.y);
+			var rgba=this.land.getPixel(x,y);
+
+			if(rgba.a>0){
+				this.land.blendDestinationOut();
+				this.land.circle(x,y,16,'rgba(0,0,0,255');
+				this.land.blendReset();
+				this.land.update();
+
+				this.removeBullet();
+			}
 		},
 
 		/*
@@ -112,26 +149,36 @@
 		撞击
 		*/
 		hitTarget:function(bullet,target){
+
+			this.emitter.at(target);
+			this.emitter.explode(2000,10);
+
 			target.kill();
-			this.removeBullet();
+			this.removeBullet(true);
 		},
 
-		removeBullet:function(){
+		removeBullet:function(hasExploded){
+			if(typeof hasExploded==='undefined'){
+				hasExploded=false;
+			}
+
 			this.bullet.kill();
 			this.camera.follow();
-			this.add.tween(this.camera).to({x:0},1000,"Quint",true,1000);
+
+			var delay=1000;
+
+			if(hasExploded){
+				delay=2000;
+			}
+			this.add.tween(this.camera).to({x:0},1000,"Quint",true,delay);
 		},
 
 		update:function(){
 			//如果子弹在飞，那么就不执行这个if以下的任何语句
 			if(this.bullet.exists){
-				if(this.bullet.y>480){
-					//子弹是否飞行过低
-					this.removeBullet();
-				}else{
-					//子弹击中目标
-					this.physics.arcade.overlap(this.bullet,this.targets,this.hitTarget,null,this);
-				}
+				//子弹击中目标
+				this.physics.arcade.overlap(this.bullet,this.targets,this.hitTarget,null,this);
+				this.bulletVsLand();
 			}else{
 				//power在100和600之间
 				if(this.cursors.left.isDown&&this.power>100){
