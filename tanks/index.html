@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>tanks</title>
+	<script src="js/phaser.min.js" ></script>
+</head>
+<body>
+
+<script>
+	var game=new Phaser.Game(640,480,Phaser.CANVAS,'game');
+
+	var PhaserGame=function(game){
+		this.tank=null;
+		this.turret=null;
+		this.flame=null;
+		this.bullet=null;
+
+		this.background=null;
+		this.targets=null;
+
+		this.power=300;
+		this.powerText=null;
+
+		this.cursors=null;
+		this.fireButton=null;
+	};
+
+	PhaserGame.prototype={
+		init:function(){
+			this.game.renderer.renderSession.roundPixels=true;
+
+			this.game.world.setBounds(0,0,992,480);
+
+			this.physics.startSystem(Phaser.Physics.ARCADE);
+			this.physics.arcade.gravity.y=200;
+		},
+
+		preload:function(){
+
+			this.load.image('tank','assets/tank.png');
+			this.load.image('turret','assets/turret.png');
+			this.load.image('bullet','assets/bullet.png');
+			this.load.image('background','assets/background.png');
+			this.load.image('flame','assets/flame.png');
+			this.load.image('target','assets/target.png');
+		},
+
+		create:function(){
+			this.background=this.add.sprite(0,0,'background');
+
+			this.targets=this.add.group(this.game.world,'targets',false,true,Phaser.Physics.ARCADE);
+
+			this.targets.create(300,390,'target');
+			this.targets.create(500,390,'target');
+			this.targets.create(700,390,'target');
+			this.targets.create(900,390,'target');
+
+			//防止重力使其下坠
+			this.targets.setAll('body.allowGravity',false);
+
+			this.bullet=this.add.sprite(0,0,'bullet');
+			this.bullet.exists=false;
+			this.physics.arcade.enable(this.bullet);
+
+			this.tank=this.add.sprite(24,383,'tank');
+
+			this.turret=this.add.sprite(this.tank.x+30,this.tank.y+14,'turret');
+
+			this.flame=this.add.sprite(0,0,'flame');
+			this.flame.anchor.set(0.5);
+			this.flame.visible=false;
+
+			this.power=300;
+			this.powerText=this.add.text(8,8,'Power: 300',{font:"18px Consolas",fill:"red"});
+			this.powerText.setShadow(1,1,'rgba(255,255,255,0.8)',1);
+			//使文字始终在屏幕左上方，而不会因为视角移动而消失
+			this.powerText.fixedToCamera=true;
+
+			this.cursors=this.input.keyboard.createCursorKeys();
+
+			this.fireButton=this.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+			this.fireButton.onDown.add(this.fire,this);
+		},
+
+		/*
+		由fireButton触发的函数
+		*/
+		fire:function(){
+			if(this.bullet.exists){
+				return;
+			}
+
+			this.bullet.reset(this.turret.x,this.turret.y);
+
+			var p=new Phaser.Point(this.turret.x,this.turret.y);
+			p.rotate(p.x,p.y,this.turret.rotation,false,34);
+
+			this.flame.x=p.x;
+			this.flame.y=p.y;
+			this.flame.alpha=1;
+			this.flame.visible=true;
+
+			this.add.tween(this.flame).to({alpha:0},100,"Linear",true);
+
+			this.camera.follow(this.bullet);
+
+			this.physics.arcade.velocityFromRotation(this.turret.rotation,this.power,this.bullet.body.velocity);
+		},
+
+		/*
+		撞击
+		*/
+		hitTarget:function(bullet,target){
+			target.kill();
+			this.removeBullet();
+		},
+
+		removeBullet:function(){
+			this.bullet.kill();
+			this.camera.follow();
+			this.add.tween(this.camera).to({x:0},1000,"Quint",true,1000);
+		},
+
+		update:function(){
+			//如果子弹在飞，那么就不执行这个if以下的任何语句
+			if(this.bullet.exists){
+				if(this.bullet.y>480){
+					//子弹是否飞行过低
+					this.removeBullet();
+				}else{
+					//子弹击中目标
+					this.physics.arcade.overlap(this.bullet,this.targets,this.hitTarget,null,this);
+				}
+			}else{
+				//power在100和600之间
+				if(this.cursors.left.isDown&&this.power>100){
+					this.power-=2;
+				}else if(this.cursors.right.isDown&&this.power<600){
+					this.power+=2;
+				}
+
+				//设置角度
+				if(this.cursors.up.isDown&&this.turret.angle>-90){
+					this.turret.angle--;
+				}else if(this.cursors.down.isDown&&this.turret.angle<0){
+					this.turret.angle++;
+				}
+
+				//更新power
+				this.powerText.text='Power: '+this.power;
+			}
+		}
+	};
+
+	game.state.add('Game',PhaserGame,true);
+
+</script>
+	
+</body>
+</html>
