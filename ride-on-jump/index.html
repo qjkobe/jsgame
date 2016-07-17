@@ -27,33 +27,60 @@
 		init:function(){
 			this.game.renderer.renderSession.roundPixels=true;
 
+			this.world.resize(640,2000);
+
 			this.physics.startSystem(Phaser.Physics.ARCADE);
 
 			this.physics.arcade.gravity.y=750;
+			this.physics.arcade.skipQuadTree=false;
 		},
 
 		preload:function(){
-			this.load.image('background','assets/background.png');
+			this.load.image('trees','assets/trees.png');
+			this.load.image('clouds','assets/clouds.png');
 			this.load.image('platform','assets/platform.png');
 			this.load.image('ice-platform','assets/ice-platform.png');
 			this.load.spritesheet('dude','assets/dude.png',32,48);
 		},
 
 		create:function(){
-			this.add.sprite(0,0,'background');
+
+			this.stage.backgroundColor="#2f9acc";
+
+			this.sky=this.add.tileSprite(0,0,640,480,'clouds');
+			this.sky.fixedToCamera=true;
+			
+			this.add.sprite(0,1906,'trees');
 
 			this.platforms=this.add.physicsGroup();
 
-			this.platforms.create(0,64,'ice-platform');
-			this.platforms.create(200,180,'platform');
-			this.platforms.create(400,296,'ice-platform');
-			this.platforms.create(600,412,'platform');
+			var x=0;
+			var y=0;
+
+			for(var i=0;i<19;i++){
+				var type=i%2===1?'platform':'ice-platform';
+				var platform=this.platforms.create(x,y,type);
+
+				platform.body.velocity.x=this.rnd.between(100,150);
+
+				if(Math.random()>0.5){
+					platform.body.velocity.x*=-1;
+				}
+
+				x+=200;
+
+				if(x>=600){
+					x=0;
+				}
+
+				y+=104;
+			}
+
 
 			this.platforms.setAll('body.allowGravity',false);
 			this.platforms.setAll('body.immovable',true);
-			this.platforms.setAll('body.velocity.x',100);
 
-			this.player=this.add.sprite(320,432,'dude');
+			this.player=this.add.sprite(320,1952,'dude');
 
 			this.physics.arcade.enable(this.player);
 
@@ -61,8 +88,10 @@
 			this.player.body.setSize(20,32,5,16);
 			
 			this.player.animations.add('left',[0,1,2,3],10,true);
-			this.player.animations.add('turn',[4],20,true);
+			//this.player.animations.add('turn',[4],20,true);
 			this.player.animations.add('right',[5,6,7,8],10,true);
+
+			this.camera.follow(this.player);
 
 			this.cursors=this.input.keyboard.createCursorKeys();
 		},
@@ -83,6 +112,9 @@
 		},
 
 		update:function(){
+
+			this.sky.tilePosition.y=-(this.camera.y*0.7);
+
 			this.platforms.forEach(this.wrapPlatform,this);
 
 			this.physics.arcade.collide(this.player,this.platforms,this.setFriction,null,this);
@@ -119,10 +151,17 @@
 				}
 			}
 
-			if(standing&&this.cursors.up.isDown&&this.time.time>this.jumpTimer){
+			//即使不小心掉下去了，但只要250ms之前在上面就还能起跳
+			if(!standing&&this.wasStanding){
+				this.edgeTimer=this.time.time+250;
+			}
+
+			if((standing||this.time.time<=this.edgeTimer) && this.cursors.up.isDown && this.time.time>this.jumpTimer){
 				this.player.body.velocity.y=-500;
 				this.jumpTimer=this.time.time+750;
 			}
+
+			this.wasStanding=standing;
 		}
 	};
 
