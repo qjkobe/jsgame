@@ -23,6 +23,7 @@ flappy bird制作完成
 tanks制作到一半  
 
 ##2016.7.17  
-优化tanks游戏
+优化tanks游戏  
+完成ride-on-jump平台搭建
 
 
