@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>cloud-platforms</title>
+</head>
+<script src="js/phaser.min.js"></script>
+<body>
+
+<script type="text/javascript">
+	
+	var game = new Phaser.Game(640, 480, Phaser.CANVAS, 'game');
+
+	var PhaserGame = function () {
+		this.bg = null;
+		this.trees = null;
+
+		this.player = null;
+
+		this.stationary = null;
+		this.clouds = null;
+
+		this.facing = 'left';
+		this.jumpTimer = 0;
+		this.cursors;
+		this.locked = false;
+		this.lockedTo = null;
+		this.wasLocked = false;
+		this.willJump = false;
+	};
+
+	PhaserGame.prototype = {
+
+		init: function () {
+
+			this.game.renderer.renderSession.roundPixels = true;
+
+			this.world.resize(640*3, 480);
+
+			this.physics.startSystem(Phaser.Physics.ARCADE);
+
+			this.physics.arcade.gravity.y = 600;
+		},
+
+		preload: function () {
+
+			this.load.image('trees', 'assets/tree-h.png');
+			this.load.image('background', 'assets/clouds-h.png');
+			this.load.image('platform', 'assets/platform.png');
+			this.load.image('cloud-platform', 'assets/cloud-platform.png');
+			this.load.spritesheet('dude', 'assets/dude.png', 32, 48);
+		},
+
+		create: function () {
+			this.background = this.add.titleSprite(0, 0, 640, 480, 'background');
+			this.background.fixedToCamera = true;
+
+			this.trees = this.add.titleSprite(0, 364, 640, 116, 'trees');
+			this.trees.fixedToCamera = true;
+
+			this.stationary = this.add.physicsGroup();
+
+			this.stationary.create(0, 96, 'platform');
+			this.stationary.create(632, 220, 'platform');
+			this.stationary.create(1100, 300, 'platform');
+
+			this.stationary.setAll('body.allowGravity', false);
+			this.stationary.setAll('body.immovable', true);
+
+			this.clouds = this.add.physicsGroup();
+
+			var cloud1 = new CloudPlatform(this.game, 300, 450, 'cloud-platform'
+				, this.clouds);
+		}
+	}
+</script>
+</body>
+</html>
